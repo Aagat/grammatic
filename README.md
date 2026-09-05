@@ -8,6 +8,8 @@ Design and data model: [docs/spec.md](docs/spec.md).
 
 ## How it works
 
+![A Bluetooth scale sends a reading to Grammatic, which saves it in Postgres for the dashboard. One weigh-in becomes one record, with no cloud required.](assets/grammatic-illustrations/01-how-it-works.png)
+
 The scale passively broadcasts a 13-byte body-composition frame (service data `0x181B`) while you weigh yourself and re-broadcasts the final result afterwards. The agent (intended to run on a machine with Bluetooth in range of the scale) watches advertisements with BlueZ, classifies the frame's embedded clock, assigns a profile by weight window, computes the Mi Fit / Holtek body metrics, and inserts the row. A database unique index on `(measured_at, weight, impedance)` makes duplicates impossible. Frame layout and formulas are documented in [docs/spec.md](docs/spec.md), following the reverse-engineering in [lolouk44/xiaomi_mi_scale](https://github.com/lolouk44/xiaomi_mi_scale).
 
 The agent also takes over the scale's clock maintenance (previously done by the OpenScale app): when drift is detected it connects via GATT and writes the current time to the Current Time Service (`0x2A9C`-adjacent characteristic `0x2A2B`), only while the scale is idle.
