@@ -1,0 +1,28 @@
+/data/
+
+/target
+
+# Local-only Kilo state (plans, worktrees, UI state) — commands/agents in
+# .kilo/command/ and .kilo/agent/ are still tracked.
+.kilo/plans/
+.kilo/worktrees/
+.kilo/agent-manager.json
+
+# Release archives and staging directories.
+/dist/
+
+# Local credentials, captures, database exports, and personal data.
+.env
+.env.*
+!.env.example
+config.local.toml
+*.hex
+*.sql.gz
+*.dump
+*.sqlite*
+*.log
+*.pem
+*.key
+.DS_Store
+/seeds/
+/frontend/qa/

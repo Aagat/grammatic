@@ -1,0 +1,26 @@
+name: grammatic-test
+services:
+  test-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: grammatic
+      POSTGRES_PASSWORD: grammatic
+      POSTGRES_DB: grammatic_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U grammatic -d grammatic_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  tests:
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile
+      target: tests
+    init: true
+    environment:
+      TEST_DATABASE_URL: postgres://grammatic:grammatic@test-db:5432/grammatic_test
+    depends_on:
+      test-db:
+        condition: service_healthy

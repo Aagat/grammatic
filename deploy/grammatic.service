@@ -1,0 +1,37 @@
+# systemd unit for the grammatic capture agent.
+#
+# Install:
+#   sudo cp target/release/grammatic /usr/local/bin/
+#   sudo mkdir -p /etc/grammatic /var/lib/grammatic
+#   sudo cp config.toml /etc/grammatic/config.toml
+#   sudo useradd -r -s /usr/sbin/nologin grammatic
+#   sudo usermod -aG bluetooth grammatic
+#   sudo chown grammatic:grammatic /var/lib/grammatic
+#   sudo cp deploy/grammatic.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now grammatic
+#
+# If you get BlueZ permission errors as the `grammatic` user, grant the
+# capabilities instead of relying on group membership:
+#   sudo setcap 'cap_net_raw,cap_net_admin+eip' /usr/local/bin/grammatic
+
+[Unit]
+Description=Grammatic capture agent for Xiaomi Mi Body Composition Scale 2 capture agent
+Documentation=file:///opt/grammatic/docs/spec.md
+After=bluetooth.target network-online.target
+Wants=bluetooth.target network-online.target
+
+[Service]
+Type=simple
+User=grammatic
+Group=grammatic
+SupplementaryGroups=bluetooth
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
+ExecStart=/usr/local/bin/grammatic --config /etc/grammatic/config.toml listen
+Restart=always
+RestartSec=5
+# Spool state must survive restarts.
+StateDirectory=grammatic
+
+[Install]
+WantedBy=multi-user.target

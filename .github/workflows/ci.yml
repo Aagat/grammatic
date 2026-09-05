@@ -1,0 +1,58 @@
+name: Test and release
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: grammatic-ci
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container:
+      image: node:22-bookworm
+    timeout-minutes: 45
+    services:
+      test-db:
+        image: postgres:16-bookworm
+        env:
+          POSTGRES_USER: grammatic
+          POSTGRES_PASSWORD: grammatic
+          POSTGRES_DB: grammatic_test
+        options: >-
+          --health-cmd "pg_isready -U grammatic -d grammatic_test"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgres://grammatic:grammatic@test-db:5432/grammatic_test
+      CARGO_TERM_COLOR: always
+      TEST_HTTP_PORT: 18090
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends libdbus-1-dev libssl-dev pkg-config python3
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup.sh
+          sh /tmp/rustup.sh -y --profile minimal --component clippy
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Test and build dashboard
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npm test
+      - name: Test backend and dashboard API
+        run: bash dev/test-backend.sh
+      - name: Build release binary
+        run: |
+          cargo build --release --locked
+          ./target/release/grammatic --help

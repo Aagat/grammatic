@@ -1,0 +1,20 @@
+[Unit]
+Description=Grammatic dashboard and API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=grammatic
+Group=grammatic
+WorkingDirectory=/opt/grammatic
+ExecStart=/usr/local/bin/grammatic --config /etc/grammatic/config.toml serve --bind 127.0.0.1:8090 --frontend /opt/grammatic/frontend/dist/client
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

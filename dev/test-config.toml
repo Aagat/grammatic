@@ -1,0 +1,2 @@
+[database]
+url = "postgres://grammatic:grammatic@test-db:5432/grammatic_test"

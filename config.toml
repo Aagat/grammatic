@@ -1,0 +1,42 @@
+# grammatic agent configuration.
+# Copy to /etc/grammatic/config.toml (or run with --config <path>).
+
+# MAC address of your Mi Body Composition Scale 2 (run `grammatic find` to discover).
+scale_mac = "00:00:00:00:00:00"
+
+[database]
+# Password comes from PGPASSWORD or ~/.pgpass of the service user.
+url = "postgres://grammatic@localhost/grammatic"
+
+[listen]
+# Stabilized frames captured while Postgres is unreachable are spooled here
+# and replayed on reconnect.
+spool_path = "/var/lib/grammatic/spool.hex"
+spool_max_bytes = 5_242_880
+
+[clock_sync]
+# The agent takes over keeping the scale's clock right (it writes the current
+# time over GATT when drift is detected, like the OpenScale app does).
+enabled = true
+drift_threshold_secs = 120
+
+[metrics]
+# Which derived calculations are stored alongside a measurement:
+# "all" (default) stores all 12 metric columns, "weight-only" stores only the
+# 4 weight-only ones, "none" stores no metrics. History tie-breaks still
+# compute transient metrics even when storage is trimmed.
+store = "all"
+
+[history]
+# Recovering weigh-ins whose stabilized frame never arrived live, by asking
+# the scale for its stored history over GATT (see docs/adr/0002-*).
+enabled = true
+# Automatic pull in `listen` when live frames stop with no stabilized frame.
+# On since the 2026-09-03/04 soak validated the fallback end to end (see
+# docs/adr/0002-*); `grammatic fetch-history` works regardless.
+auto_fetch = true
+# Quiet period on raw advertisements before the fallback fires. Must stay
+# strictly longer than the 30 s clock-sync idle window.
+quiet_timeout_secs = 75
+# Per-agent GATT device-id (lets the scale track our history position).
+device_id_file = "/var/lib/grammatic/device_id"

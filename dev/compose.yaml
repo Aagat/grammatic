@@ -1,0 +1,84 @@
+name: grammatic-dev
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: grammatic
+      POSTGRES_PASSWORD: grammatic
+      POSTGRES_DB: grammatic
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U grammatic -d grammatic"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  backend:
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile
+      target: backend-dev
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${GRAMMATIC_API_PORT:-8090}:8090"
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://localhost:8090/api/health]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
+    develop:
+      watch:
+        - action: sync+restart
+          path: ../src
+          target: /workspace/src
+          initial_sync: true
+        - action: sync+restart
+          path: ../migrations
+          target: /workspace/migrations
+          initial_sync: true
+        - action: sync+restart
+          path: config.toml
+          target: /workspace/dev/config.toml
+          initial_sync: true
+        - action: rebuild
+          path: ../Cargo.toml
+        - action: rebuild
+          path: ../Cargo.lock
+        - action: rebuild
+          path: Dockerfile
+  frontend:
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile
+      target: frontend-dev
+    init: true
+    environment:
+      GRAMMATIC_API_PROXY: http://backend:8090
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${GRAMMATIC_WEB_PORT:-5173}:5173"
+    develop:
+      watch:
+        - action: sync
+          path: ../frontend
+          target: /workspace/frontend
+          initial_sync: true
+          ignore:
+            - node_modules/
+            - dist/
+            - package.json
+            - package-lock.json
+        - action: rebuild
+          path: ../frontend/package.json
+        - action: rebuild
+          path: ../frontend/package-lock.json
+        - action: rebuild
+          path: Dockerfile
+volumes:
+  database:

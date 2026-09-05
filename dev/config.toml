@@ -1,0 +1,3 @@
+# Disposable local development credentials; no Bluetooth required for serve.
+[database]
+url = "postgres://grammatic:grammatic@db:5432/grammatic"
